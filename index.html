@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Will You Be My Valentine</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: 'Trebuchet MS', Arial, sans-serif;
+    }
+
+    body {
+      margin: 0;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(180deg, #2b0a0a, #120404);
+      color: #f8eaea;
+      overflow: hidden;
+    }
+
+    .card {
+      background: linear-gradient(160deg, #3b0a0a, #1a0505);
+      padding: 2rem;
+      border-radius: 14px;
+      text-align: center;
+      max-width: 90vw;
+      width: 400px;
+      border: 1px solid #7a1c1c;
+    }
+
+    /* subtle rose pattern */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background-image: radial-gradient(rgba(122,28,28,0.15) 1px, transparent 1px);
+      background-size: 22px 22px;
+      pointer-events: none;
+    }
+
+    #userPhoto {
+      width: 100%;
+      max-width: 360px;
+      height: auto;
+      object-fit: cover;
+      border-radius: 12px;
+      margin-bottom: 1.2rem;
+      border: 2px solid #7a1c1c;
+    }
+
+    h1 {
+      font-size: 1.6rem;
+      margin-bottom: 0.4rem;
+      letter-spacing: 0.4px;
+    }
+
+    p {
+      font-size: 0.95rem;
+      margin-bottom: 1.4rem;
+      opacity: 0.9;
+    }
+
+    .buttons {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    button {
+      padding: 0.65rem 1.35rem;
+      font-size: 0.95rem;
+      border: none;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: transform 0.2s ease, left 0.2s ease, top 0.2s ease;
+    }
+
+    #yesBtn {
+      background: #14532d; /* deep green */
+      color: #ecfdf5;
+    }
+
+    #noBtn {
+      background: #7a1c1c; /* deep red */
+      color: #fff5f5;
+      position: relative;
+    }
+
+    #message {
+      margin-top: 1rem;
+      min-height: 1.5em;
+      font-size: 0.9rem;
+      opacity: 0.9;
+    }
+
+    .petal {
+      position: fixed;
+      top: -10px;
+      width: 10px;
+      height: 14px;
+      background: #7a1c1c;
+      border-radius: 50% 50% 50% 0;
+      transform: rotate(45deg);
+      animation: fall linear forwards;
+      opacity: 0.8;
+    }
+
+    @keyframes fall {
+      to { transform: translateY(110vh) rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <img id="userPhoto" src="elliotthumb.png" alt="Your photo" />
+    <input type="file" id="photoInput" accept="image/*" style="display:none" />
+    
+
+    <h1>Will you be my Valentine?</h1>
+    <p>Just answer honestly. Or try to.</p>
+
+    <div class="buttons">
+      <button id="yesBtn">Yes <3</button>
+      <button id="noBtn">No :/</button>
+    </div>
+
+    <div id="message"></div>
+  </div>
+
+  <script>
+    const yesBtn = document.getElementById('yesBtn');
+    const noBtn = document.getElementById('noBtn');
+    const message = document.getElementById('message');
+
+    const noMessages = [
+      'frick off eejit',
+      'try again lad',
+      'you\'re joking',
+      'must have been a misclick xd'
+    ];
+
+    let lastNoMessage = null;
+
+    let noScale = 1;
+
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    const photo = document.getElementById('userPhoto');
+    const photoInput = document.getElementById('photoInput');
+
+    // Fallback to file input if image doesn't load
+    photo.addEventListener('error', () => {
+      photo.src = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 400'><defs><linearGradient id='g' x1='0' y1='0' x2='0' y2='1'><stop offset='0%' stop-color='%237a1c1c'/><stop offset='100%' stop-color='%233b0a0a'/></linearGradient></defs><rect width='600' height='400' fill='url(%23g)'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' fill='%23f8eaea' font-size='24' font-family='Trebuchet MS, Arial'>Click to upload photo</text></svg>";
+    });
+
+    photo.addEventListener('click', () => photoInput.click());
+    photoInput.addEventListener('change', () => {
+      const file = photoInput.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = e => photo.src = e.target.result;
+      reader.readAsDataURL(file);
+    });
+
+    function playTone(freq, duration) {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.frequency.value = freq;
+      osc.type = 'sine';
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+      osc.stop(audioCtx.currentTime + duration);
+    }
+
+    noBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      playTone(170, 0.15);
+
+      noScale += 0.15;
+      noBtn.style.transform = `scale(${noScale})`;
+
+      let nextMessage;
+      do {
+        nextMessage = noMessages[Math.floor(Math.random() * noMessages.length)];
+      } while (nextMessage === lastNoMessage);
+
+      lastNoMessage = nextMessage;
+      noBtn.textContent = nextMessage;
+
+      const x = Math.random() * 180 - 90;
+      const y = Math.random() * 180 - 90;
+      noBtn.style.left = x + 'px';
+      noBtn.style.top = y + 'px';
+
+      message.textContent = 'Let us reconsider that.';
+    });
+
+    yesBtn.addEventListener('click', () => {
+      playTone(520, 0.3);
+      message.textContent = 'I like you 3000.';
+      for (let i = 0; i < 80; i++) createPetal();
+    });
+
+    function createPetal() {
+      const p = document.createElement('div');
+      p.className = 'petal';
+      p.style.left = Math.random() * 100 + 'vw';
+      p.style.animationDuration = 3 + Math.random() * 2 + 's';
+      document.body.appendChild(p);
+      setTimeout(() => p.remove(), 5000);
+    }
+  </script>
+</body>
+</html>
